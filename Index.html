@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resource Hub — User Panel</title>
+</head>
+<body>
+  <h1>Resource Hub</h1>
+
+  <!-- User Login -->
+  <section id="userLogin">
+    <h2>User Login</h2>
+    <input type="text" id="userName" placeholder="Username"><br><br>
+    <input type="password" id="userPass" placeholder="Password"><br><br>
+    <button id="userLoginBtn">Login</button>
+    <p id="userMsg"></p>
+  </section>
+
+  <!-- Resources Section -->
+  <section id="resourceSection">
+    <h2>Available Resources</h2>
+    <ul id="resourcesList"></ul>
+  </section>
+
+  <button id="logoutBtn" style="display:none;">Logout</button>
+
+  <script>
+    const API_ROOT = "http://localhost:3000"; // backend API root
+    let userToken = localStorage.getItem('user_token');
+
+    // Fetch resources from backend
+    async function loadResources() {
+      try {
+        const res = await fetch(API_ROOT + "/api/resources");
+        const resources = await res.json();
+
+        const list = document.getElementById("resourcesList");
+        list.innerHTML = "";
+
+        resources.forEach(r => {
+          const li = document.createElement("li");
+          li.innerHTML = `<strong>${r.title}</strong> 
+            <button onclick="openResource('${r.link}')">Open</button>`;
+          list.appendChild(li);
+        });
+      } catch (err) {
+        console.error("Error loading resources", err);
+      }
+    }
+
+    loadResources();
+
+    // Open resource (locked unless logged in)
+    function openResource(link) {
+      if (!userToken) {
+        alert("You must log in to access this resource.");
+        return;
+      }
+      window.open(link, "_blank");
+    }
+
+    // User Login
+    document.getElementById('userLoginBtn').addEventListener('click', async () => {
+      const username = document.getElementById('userName').value;
+      const password = document.getElementById('userPass').value;
+
+      const res = await fetch(API_ROOT + '/api/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        userToken = data.token;
+        localStorage.setItem('user_token', userToken);
+        document.getElementById('userLogin').style.display = 'none';
+        document.getElementById('logoutBtn').style.display = 'block';
+        alert("Login successful! You can now open resources.");
+      } else {
+        document.getElementById('userMsg').innerText = data.message;
+      }
+    });
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('user_token');
+      userToken = null;
+      document.getElementById('userLogin').style.display = 'block';
+      document.getElementById('logoutBtn').style.display = 'none';
+      alert("Logged out. Resources are locked again.");
+    });
+
+    // Auto login state
+    window.onload = () => {
+      if (userToken) {
+        document.getElementById('userLogin').style.display = 'none';
+        document.getElementById('logoutBtn').style.display = 'block';
+      }
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel — Resource Hub</title>
+</head>
+<body>
+  <h1>Admin Dashboard</h1>
+
+  <section id="adminLogin">
+    <h2>Admin Login</h2>
+    <input type="text" id="adminUser" placeholder="Admin Username"><br><br>
+    <input type="password" id="adminPass" placeholder="Password"><br><br>
+    <button id="adminLoginBtn">Login</button>
+    <p id="adminMsg"></p>
+  </section>
+
+  <section id="adminPanel" style="display:none;">
+    <h2>Admin Actions</h2>
+
+    <h3>Add Resource</h3>
+    <input type="text" id="resTitle" placeholder="Resource Title"><br><br>
+    <textarea id="resContent" placeholder="Resource Content"></textarea><br><br>
+    <button id="addResBtn">Add Resource</button>
+
+    <h3>Create User</h3>
+    <input type="text" id="newUser" placeholder="New Username"><br><br>
+    <input type="password" id="newPass" placeholder="Password"><br><br>
+    <button id="addUserBtn">Create User</button>
+  </section>
+
+  <script>
+    const API_ROOT = "http://localhost:3000";
+    let adminToken = null;
+
+    // Admin Login
+    document.getElementById('adminLoginBtn').addEventListener('click', async () => {
+      const username = document.getElementById('adminUser').value;
+      const password = document.getElementById('adminPass').value;
+
+      const res = await fetch(API_ROOT + '/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        adminToken = data.token;
+        localStorage.setItem('admin_token', adminToken);
+        document.getElementById('adminLogin').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'block';
+      } else {
+        document.getElementById('adminMsg').innerText = data.message;
+      }
+    });
+
+    // Add Resource
+    document.getElementById('addResBtn').addEventListener('click', async () => {
+      const title = document.getElementById('resTitle').value;
+      const content = document.getElementById('resContent').value;
+
+      const res = await fetch(API_ROOT + '/api/admin/resources/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + adminToken
+        },
+        body: JSON.stringify({ title, content })
+      });
+
+      const data = await res.json();
+      alert(data.message);
+    });
+
+    // Add User
+    document.getElementById('addUserBtn').addEventListener('click', async () => {
+      const username = document.getElementById('newUser').value;
+      const password = document.getElementById('newPass').value;
+
+      const res = await fetch(API_ROOT + '/api/admin/users/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + adminToken
+        },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await res.json();
+      alert(data.message);
+    });
+  </script>
+</body>
+</html>
